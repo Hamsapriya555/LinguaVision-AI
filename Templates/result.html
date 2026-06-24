@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translation Results – LinguaVision AI</title>
+<meta name="description" content="AI-dubbed video results with transcripts, summaries and subtitles.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+/* ── Result-page extras ───────────────────────────────────────────────────── */
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:2rem;}
+.analytic-card{background:var(--glass);border:1px solid var(--glassborder);border-radius:14px;padding:1.2rem 1rem;text-align:center;backdrop-filter:blur(12px);}
+.analytic-val{font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,var(--blue),var(--violet));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.analytic-lbl{font-size:0.75rem;color:var(--muted);margin-top:0.25rem;}
+
+.section-heading{font-size:1.1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;}
+
+.ai-summary-box{background:var(--glass);border:1px solid var(--glassborder);border-radius:16px;padding:1.6rem;margin-bottom:2rem;backdrop-filter:blur(12px);}
+.ai-summary-box p{color:var(--muted);line-height:1.8;font-size:0.92rem;}
+.topic-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:1rem;}
+.topic-pill{background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(139,92,246,.18));border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:.3rem .9rem;font-size:.78rem;color:var(--text);}
+.insights-list{list-style:none;margin-top:1rem;}
+.insights-list li{position:relative;padding:.5rem .5rem .5rem 1.4rem;font-size:.88rem;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.05);}
+.insights-list li::before{content:"✦";position:absolute;left:0;color:var(--cyan);font-size:.7rem;top:.6rem;}
+
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem;}
+@media(max-width:640px){.compare-grid{grid-template-columns:1fr;}}
+.compare-panel{background:var(--glass);border:1px solid var(--glassborder);border-radius:14px;padding:1.2rem;backdrop-filter:blur(12px);}
+.compare-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;}
+.compare-panel-title{font-size:.85rem;font-weight:700;color:var(--cyan);}
+.compare-body{max-height:200px;overflow-y:auto;font-size:.85rem;color:var(--muted);line-height:1.8;scrollbar-width:thin;}
+.compare-body::-webkit-scrollbar{width:4px;}
+.compare-body::-webkit-scrollbar-thumb{background:var(--glassborder);border-radius:2px;}
+
+.lang-tab-bar{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;}
+.lang-tab{padding:.4rem 1rem;border-radius:20px;border:1px solid var(--glassborder);background:transparent;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.lang-tab.active{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;border-color:transparent;}
+
+.output-card{background:var(--glass);border:1px solid var(--glassborder);border-radius:16px;padding:1.5rem;backdrop-filter:blur(12px);display:none;position:relative;overflow:hidden;}
+.output-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--violet));}
+.output-card.active{display:block;animation:fadeInUp .4s ease both;}
+.output-card-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.2rem;}
+.output-lang-badge{display:inline-flex;align-items:center;gap:.5rem;background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(139,92,246,.22));border:1px solid rgba(59,130,246,.3);border-radius:20px;padding:.4rem 1rem;font-size:.88rem;font-weight:700;}
+.file-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.25);border-radius:10px;padding:.65rem 1rem;margin-bottom:.6rem;flex-wrap:wrap;gap:.5rem;}
+.file-row-name{font-size:.82rem;color:var(--muted);font-family:monospace;display:flex;align-items:center;gap:.5rem;}
+.btn-dl{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .9rem;border-radius:8px;font-size:.8rem;font-weight:600;text-decoration:none;transition:all .25s;background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-dl:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,.4);}
+.btn-dl-ghost{background:transparent;border:1px solid var(--glassborder);color:var(--muted);}
+.btn-dl-ghost:hover{border-color:var(--blue);color:var(--text);}
+.audio-player{width:100%;margin-top:.5rem;filter:invert(1) hue-rotate(180deg);height:36px;}
+
+/* ── Embedded Media Player ────────────────────────────────────────────────── */
+.player-section{background:var(--glass);border:1px solid var(--glassborder);border-radius:20px;padding:1.6rem;margin-bottom:2rem;backdrop-filter:blur(16px);animation:fadeInUp .5s ease .15s both;}
+.player-lang-tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1.2rem;}
+.player-tab{padding:.35rem .9rem;border-radius:16px;border:1px solid var(--glassborder);background:transparent;color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;}
+.player-tab.active{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;border-color:transparent;}
+.player-pane{display:none;}
+.player-pane.active{display:block;animation:fadeInUp .3s ease both;}
+.video-player{width:100%;border-radius:14px;background:#000;max-height:420px;outline:none;box-shadow:0 8px 40px rgba(0,0,0,.6);}
+.audio-player-styled{width:100%;height:54px;border-radius:12px;background:rgba(0,0,0,.4);outline:none;}
+.player-meta{display:flex;align-items:center;justify-content:space-between;margin-top:.8rem;flex-wrap:wrap;gap:.5rem;}
+.player-meta-badge{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.4rem;}
+
+/* ── Side-by-Side Video Comparison ───────────────────────────────────────── */
+.compare-video-section{margin-bottom:1.4rem;}
+.compare-video-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:700px){.compare-video-grid{grid-template-columns:1fr;}}
+.compare-video-panel{position:relative;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--glassborder);}
+.compare-video-label{position:absolute;top:.6rem;left:.7rem;z-index:2;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);border-radius:8px;padding:.25rem .65rem;font-size:.72rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.35rem;}
+.compare-video-label.translated{background:linear-gradient(135deg,rgba(59,130,246,.7),rgba(139,92,246,.7));}
+.compare-video-player{width:100%;border-radius:14px;max-height:240px;display:block;}
+.sync-btn{display:inline-flex;align-items:center;gap:.4rem;background:var(--glass);border:1px solid var(--glassborder);border-radius:10px;padding:.4rem .9rem;font-size:.78rem;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;margin-top:.8rem;}
+.sync-btn:hover{border-color:var(--blue);color:var(--text);}
+.sync-btn.synced{border-color:var(--cyan);color:var(--cyan);}
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- Navbar -->
+<nav>
+  <div class="logo"><i class="fas fa-language"></i> LinguaVision AI</div>
+  <a href="/" class="nav-back"><i class="fas fa-arrow-left"></i> New Translation</a>
+</nav>
+
+<div class="page">
+
+  <!-- ── Success Banner ─────────────────────────────────────────────── -->
+  <div class="success-banner">
+    <span class="success-icon">🎉</span>
+    <h1>Translation Complete!</h1>
+    <p>Powered by Whisper AI &amp; Google Neural Translation
+      {% if result.source_has_video %}· Full Video Dubbing{% else %}· Audio Translation{% endif %}
+    </p>
+  </div>
+
+  <!-- ── Analytics ──────────────────────────────────────────────────── -->
+  {% set a = result.analytics %}
+  <div class="analytics-grid" style="animation:fadeInUp .5s ease .1s both;">
+    <div class="analytic-card">
+      <div class="analytic-val">{{ a.duration }}s</div>
+      <div class="analytic-lbl">Video Duration</div>
+    </div>
+    <div class="analytic-card">
+      <div class="analytic-val">{{ a.words }}</div>
+      <div class="analytic-lbl">Words Processed</div>
+    </div>
+    <div class="analytic-card">
+      <div class="analytic-val">{{ a.languages }}</div>
+      <div class="analytic-lbl">Languages</div>
+    </div>
+    <div class="analytic-card">
+      <div class="analytic-val">{{ a.get('transcribe_time', '—') }}s</div>
+      <div class="analytic-lbl">Transcription Time</div>
+    </div>
+    <div class="analytic-card">
+      <div class="analytic-val">{{ a.processing_time }}s</div>
+      <div class="analytic-lbl">Total Time</div>
+    </div>
+    <div class="analytic-card">
+      <div class="analytic-val">{{ a.output_size_kb }} KB</div>
+      <div class="analytic-lbl">Output Size</div>
+    </div>
+    <div class="analytic-card">
+      <div class="analytic-val" style="font-size:1rem;text-transform:capitalize;">{{ result.voice }}</div>
+      <div class="analytic-lbl">Voice Style</div>
+    </div>
+  </div>
+
+  <!-- ── Embedded Media Player ─────────────────────────────────────────── -->
+  {% if result.output_files %}
+  <div class="player-section">
+    <div class="section-heading" style="margin-bottom:.9rem;">
+      <i class="fas fa-play-circle" style="color:var(--cyan);"></i>
+      <span class="gradient-text">Preview Translations</span>
+      <span style="font-size:.75rem;color:var(--muted);margin-left:.5rem;">Play without downloading</span>
+    </div>
+
+    <!-- Per-language player tabs -->
+    <div class="player-lang-tabs" id="playerTabs">
+      {% for f in result.output_files %}
+      <button class="player-tab {% if loop.first %}active{% endif %}"
+              onclick="switchPlayer(this,'player_{{ f.lang_code }}')">
+        🌐 {{ f.lang_name }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- Player panes -->
+    {% for f in result.output_files %}
+    <div class="player-pane {% if loop.first %}active{% endif %}" id="player_{{ f.lang_code }}">
+      {% if f.is_video %}
+      <video class="video-player" controls preload="metadata"
+             src="{{ url_for('stream_file', filename=f.file_name) }}?v={{ result.run_timestamp }}">
+        Your browser does not support HTML5 video.
+        {% if f.srt_name %}
+        <track kind="subtitles" label="{{ f.lang_name }}"
+               src="{{ url_for('stream_file', filename=f.srt_name) }}?v={{ result.run_timestamp }}" default>
+        {% endif %}
+      </video>
+      {% else %}
+      <div style="padding:1.5rem;background:rgba(0,0,0,.3);border-radius:14px;text-align:center;">
+        <i class="fas fa-music" style="font-size:2.5rem;color:var(--cyan);margin-bottom:1rem;display:block;"></i>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem;">Translated Audio — {{ f.lang_name }}</p>
+        <audio class="audio-player-styled" controls preload="metadata"
+               src="{{ url_for('stream_file', filename=f.file_name) }}?v={{ result.run_timestamp }}"></audio>
+      </div>
+      {% endif %}
+
+      <div class="player-meta">
+        <span class="player-meta-badge">
+          <i class="fas fa-file{% if f.is_video %}-video{% else %}-audio{% endif %}"></i>
+          {{ f.file_name }} &nbsp;·&nbsp; {{ (f.file_size / 1024) | round(1) }} KB
+        </span>
+        <a href="{{ url_for('download_file', filename=f.file_name) }}?v={{ result.run_timestamp }}" class="btn-dl" style="padding:.4rem .9rem;font-size:.78rem;">
+          <i class="fas fa-download"></i> Download
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── AI Summary ─────────────────────────────────────────────────── -->
+  <div class="ai-summary-box" style="animation:fadeInUp .5s ease .2s both;">
+    <div class="section-heading">
+      <i class="fas fa-brain" style="color:var(--violet);"></i>
+      <span class="gradient-text">AI Content Summary</span>
+    </div>
+    <p>{{ result.summary }}</p>
+
+    {% if result.main_topics %}
+    <div class="topic-pills">
+      {% for topic in result.main_topics %}
+      <span class="topic-pill">{{ topic }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if result.key_insights %}
+    <ul class="insights-list" style="margin-top:1.2rem;">
+      {% for insight in result.key_insights %}
+      <li>{{ insight }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <!-- ── Transcript Comparison ──────────────────────────────────────── -->
+  <div class="section-heading" style="animation:fadeInUp .5s ease .3s both;">
+    <i class="fas fa-columns" style="color:var(--blue);"></i>
+    <span class="gradient-text">Transcript Comparison</span>
+  </div>
+
+  <!-- Language selector tabs for comparison -->
+  <div class="lang-tab-bar" id="compareTabs" style="animation:fadeInUp .5s ease .35s both;">
+    <button class="lang-tab active" onclick="switchCompare(this,'original')">
+      🔤 Original ({{ result.detected_language | upper }})
+    </button>
+    {% for f in result.output_files %}
+    <button class="lang-tab" onclick="switchCompare(this,'{{ f.lang_code }}')">
+      🌐 {{ f.lang_name }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <div class="compare-grid" style="animation:fadeInUp .5s ease .4s both;">
+    <div class="compare-panel">
+      <div class="compare-panel-header">
+        <span class="compare-panel-title"><i class="fas fa-microphone"></i> Original Transcript</span>
+        <button class="btn-dl btn-dl-ghost" style="padding:.3rem .7rem;font-size:.75rem;" onclick="copyText('origText')">
+          <i class="fas fa-copy"></i> Copy
+        </button>
+      </div>
+      <div class="compare-body" id="origText">{{ result.transcript }}</div>
+    </div>
+    <div class="compare-panel">
+      <div class="compare-panel-header">
+        <span class="compare-panel-title" id="transLabel"><i class="fas fa-language"></i> Translation</span>
+        <button class="btn-dl btn-dl-ghost" style="padding:.3rem .7rem;font-size:.75rem;" onclick="copyText('transText')">
+          <i class="fas fa-copy"></i> Copy
+        </button>
+      </div>
+      <div class="compare-body" id="transText">
+        {% if result.output_files %}
+          {{ result.translations[result.output_files[0].lang_code] }}
+        {% else %}
+          —
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Output Files per Language ──────────────────────────────────── -->
+  <div class="section-heading" style="animation:fadeInUp .5s ease .45s both;">
+    <i class="fas fa-download" style="color:var(--blue);"></i>
+    <span class="gradient-text">Download Results</span>
+  </div>
+
+  {% if result.output_files %}
+
+  <!-- Tab bar for output languages -->
+  <div class="lang-tab-bar" id="outputTabs" style="animation:fadeInUp .5s ease .5s both;">
+    {% for f in result.output_files %}
+    <button class="lang-tab {% if loop.first %}active{% endif %}"
+            onclick="switchOutput(this,'out_{{ f.lang_code }}')">
+      {{ f.lang_name }}
+    </button>
+    {% endfor %}
+  </div>
+
+  <!-- One card per language -->
+  {% for f in result.output_files %}
+  <div class="output-card {% if loop.first %}active{% endif %}" id="out_{{ f.lang_code }}"
+       style="animation:fadeInUp .5s ease .55s both; margin-bottom:1rem;">
+
+    <div class="output-card-header">
+      <span class="output-lang-badge">
+        🌐 {{ f.lang_name }}
+        {% if f.is_video %}<i class="fas fa-film" style="color:var(--cyan);margin-left:.3rem;"></i>{% else %}<i class="fas fa-music" style="color:var(--cyan);margin-left:.3rem;"></i>{% endif %}
+      </span>
+      <span style="font-size:.78rem;color:var(--muted);">{{ (f.file_size / 1024) | round(1) }} KB</span>
+    </div>
+
+    <!-- ── Side-by-Side Video Comparison (video outputs only) ── -->
+    {% if f.is_video %}
+    <div class="compare-video-section">
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:.7rem;display:flex;align-items:center;gap:.5rem;">
+        <i class="fas fa-columns" style="color:var(--blue);"></i>
+        <strong style="color:var(--text);">Side-by-Side Comparison</strong>
+        <span>· Original audio vs {{ f.lang_name }} dubbed</span>
+      </div>
+      <div class="compare-video-grid">
+        <!-- Left: Original (muted by default so both can play together) -->
+        <div class="compare-video-panel">
+          <span class="compare-video-label">
+            <i class="fas fa-volume-up"></i> Original
+          </span>
+          {% if result.original_video_path %}
+          <video class="compare-video-player" id="orig_vid_{{ f.lang_code }}"
+                 controls muted preload="metadata"
+                 src="{{ url_for('stream_file', filename=result.original_video_path) }}?v={{ result.run_timestamp }}">
+          </video>
+          {% else %}
+          <div style="padding:2rem;background:rgba(0,0,0,.3);border-radius:12px;text-align:center;color:var(--muted);">
+            <p style="font-size:.88rem;">Original video not available (audio-only source)</p>
+          </div>
+          {% endif %}
+        </div>
+        <!-- Right: Translated dubbed -->
+        <div class="compare-video-panel">
+          <span class="compare-video-label translated">
+            <i class="fas fa-language"></i> {{ f.lang_name }} Dubbed
+          </span>
+          <video class="compare-video-player" id="trans_vid_{{ f.lang_code }}"
+                 controls preload="metadata"
+                 src="{{ url_for('stream_file', filename=f.file_name) }}?v={{ result.run_timestamp }}">
+          </video>
+        </div>
+      </div>
+      <button class="sync-btn" id="syncBtn_{{ f.lang_code }}"
+              onclick="toggleSync('{{ f.lang_code }}')">
+        <i class="fas fa-link"></i> Sync Playback
+      </button>
+      <span style="font-size:.72rem;color:var(--muted);margin-left:.6rem;">Play both videos in sync</span>
+    </div>
+    {% endif %}
+
+    <!-- Main output file -->
+    <div class="file-row">
+      <span class="file-row-name">
+        {% if f.is_video %}
+          <i class="fas fa-file-video" style="color:var(--blue);"></i>
+        {% else %}
+          <i class="fas fa-file-audio" style="color:var(--cyan);"></i>
+        {% endif %}
+        {{ f.file_name }}
+      </span>
+      <a href="{{ url_for('download_file', filename=f.file_name) }}?v={{ result.run_timestamp }}" class="btn-dl">
+        <i class="fas fa-download"></i>
+        {% if f.is_video %}Download Video{% else %}Download Audio{% endif %}
+      </a>
+    </div>
+
+    <!-- SRT subtitle file -->
+    {% if f.srt_name %}
+    <div class="file-row">
+      <span class="file-row-name">
+        <i class="fas fa-closed-captioning" style="color:var(--violet);"></i>
+        {{ f.srt_name }}
+      </span>
+      <a href="{{ url_for('download_file', filename=f.srt_name) }}?v={{ result.run_timestamp }}" class="btn-dl btn-dl-ghost">
+        <i class="fas fa-download"></i> Subtitle (.srt)
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Original English SRT -->
+    {% if result.srt_files.original %}
+    <div class="file-row">
+      <span class="file-row-name">
+        <i class="fas fa-closed-captioning" style="color:var(--muted);"></i>
+        {% set srt_basename = result.srt_files.original.replace('\\', '/').split('/')[-1] %}
+        {{ srt_basename }}
+      </span>
+      <a href="{{ url_for('download_file', filename=srt_basename) }}?v={{ result.run_timestamp }}" class="btn-dl btn-dl-ghost">
+        <i class="fas fa-download"></i> Original Subtitle
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Audio preview -->
+    {% if not f.is_video %}
+    <div style="margin-top:.8rem;">
+      <div style="font-size:.78rem;color:var(--muted);margin-bottom:.3rem;">
+        <i class="fas fa-play-circle"></i> Preview
+      </div>
+      <audio class="audio-player" controls
+             src="{{ url_for('download_file', filename=f.file_name) }}?v={{ result.run_timestamp }}"></audio>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-exclamation-circle"></i>
+    <h3>No Output Files Generated</h3>
+    <p>Processing completed but no output files were returned. Check the terminal for errors.</p>
+  </div>
+  {% endif %}
+
+  <div class="back-section" style="animation:fadeInUp .5s ease .7s both;">
+    <a href="/" class="btn-new"><i class="fas fa-plus"></i> Translate Another Video</a>
+  </div>
+
+</div>
+
+<footer>
+  <p>🌐 LinguaVision AI &nbsp;|&nbsp; Whisper · Google Translate · gTTS · FFmpeg &nbsp;|&nbsp; Hackathon 2025</p>
+</footer>
+
+<script>
+/* ── Translation data from backend ── */
+const translations = {{ result.translations | tojson }};
+const langNames    = {{ result.output_files | map(attribute='lang_name') | list | tojson }};
+const langCodes    = {{ result.output_files | map(attribute='lang_code') | list | tojson }};
+
+/* ── Transcript comparison switcher ── */
+function switchCompare(btn, langCode) {
+  document.querySelectorAll('#compareTabs .lang-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const transEl = document.getElementById('transText');
+  const labelEl = document.getElementById('transLabel');
+  if (langCode === 'original') {
+    transEl.textContent = document.getElementById('origText').textContent;
+    labelEl.innerHTML   = '<i class="fas fa-language"></i> Original (copy)';
+  } else {
+    transEl.textContent = translations[langCode] || '—';
+    const idx = langCodes.indexOf(langCode);
+    labelEl.innerHTML   = `<i class="fas fa-language"></i> ${langNames[idx] || langCode}`;
+  }
+}
+
+/* ── Output tab switcher ── */
+function switchOutput(btn, cardId) {
+  document.querySelectorAll('#outputTabs .lang-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.output-card').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const card = document.getElementById(cardId);
+  if (card) card.classList.add('active');
+}
+
+/* ── Copy text helper ── */
+function copyText(elemId) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+    const btn = el.previousElementSibling?.querySelector('button') ||
+                el.parentElement?.querySelector('button');
+    if (btn) { const orig = btn.innerHTML; btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      setTimeout(() => btn.innerHTML = orig, 2000); }
+  });
+}
+
+/* ── Player tab switcher ── */
+function switchPlayer(btn, paneId) {
+  // Pause all active video/audio in the player section
+  document.querySelectorAll('.player-pane video, .player-pane audio').forEach(m => {
+    m.pause();
+  });
+  document.querySelectorAll('#playerTabs .player-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.player-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const pane = document.getElementById(paneId);
+  if (pane) pane.classList.add('active');
+}
+
+/* ── Sync Playback (side-by-side) ── */
+const syncState = {};   // langCode → boolean
+
+function toggleSync(langCode) {
+  const origVid  = document.getElementById('orig_vid_'  + langCode);
+  const transVid = document.getElementById('trans_vid_' + langCode);
+  const btn      = document.getElementById('syncBtn_'   + langCode);
+  if (!origVid || !transVid) return;
+
+  if (syncState[langCode]) {
+    // Unsync — detach listeners
+    origVid._syncHandler  && origVid.removeEventListener('play',   origVid._syncHandler);
+    origVid._syncHandler  && origVid.removeEventListener('pause',  origVid._syncHandler);
+    origVid._seekHandler  && origVid.removeEventListener('seeked', origVid._seekHandler);
+    syncState[langCode] = false;
+    btn.classList.remove('synced');
+    btn.innerHTML = '<i class="fas fa-link"></i> Sync Playback';
+  } else {
+    // Sync — mirror play/pause/seek from orig → trans
+    origVid._syncHandler = () => {
+      if (!origVid.paused) { transVid.currentTime = origVid.currentTime; transVid.play(); }
+      else                  { transVid.pause(); }
+    };
+    origVid._seekHandler = () => { transVid.currentTime = origVid.currentTime; };
+    origVid.addEventListener('play',   origVid._syncHandler);
+    origVid.addEventListener('pause',  origVid._syncHandler);
+    origVid.addEventListener('seeked', origVid._seekHandler);
+    // Also unmute original for comparison
+    origVid.muted = false;
+    syncState[langCode] = true;
+    btn.classList.add('synced');
+    btn.innerHTML = '<i class="fas fa-unlink"></i> Unsync';
+  }
+}
+</script>
+</body>
+</html>

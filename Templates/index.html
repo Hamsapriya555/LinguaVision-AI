@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinguaVision AI – Multilingual Video Translator</title>
+<meta name="description" content="Translate any video into multiple languages instantly using AI-powered speech recognition and neural translation.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<!-- Animated background orbs -->
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Navbar -->
+<nav>
+  <div class="logo"><i class="fas fa-language"></i> LinguaVision AI</div>
+  <div class="nav-badge"><i class="fas fa-circle" style="color:#22c55e;font-size:0.5rem;vertical-align:middle;"></i> AI Powered</div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+
+  {% if error %}
+  <div class="error-banner" id="errorBanner">
+    <div class="error-inner">
+      <i class="fas fa-exclamation-triangle error-icon"></i>
+      <div>
+        <strong>Processing Failed</strong>
+        <p>{{ error }}</p>
+      </div>
+      <button class="error-close" onclick="document.getElementById('errorBanner').style.display='none'">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="hero-badge"><i class="fas fa-bolt"></i> Powered by Whisper AI + Neural Translation</div>
+  <h1>Translate Any Video Into<br><span class="gradient-text">Multiple Languages Using AI</span></h1>
+  <p class="hero-sub">Upload a video or paste a YouTube link and instantly generate multilingual translations powered by state-of-the-art AI.</p>
+
+  <!-- Floating language bubbles -->
+  <div class="lang-bubbles">
+    <div class="lang-bubble">🇺🇸 EN</div>
+    <div class="lang-bubble">🇮🇳 हिंदी</div>
+    <div class="lang-bubble">🇮🇳 ಕನ್ನಡ</div>
+    <div class="lang-bubble">🇮🇳 தமிழ்</div>
+    <div class="lang-bubble">🇮🇳 తెలుగు</div>
+    <div class="lang-bubble">🇮🇳 മലയാളം</div>
+    <div class="lang-bubble">🇪🇸 Español</div>
+    <div class="lang-bubble">🇫🇷 Français</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat"><div class="stat-val">50+</div><div class="stat-label">Supported Languages</div></div>
+    <div class="stat"><div class="stat-val">95%</div><div class="stat-label">Translation Accuracy</div></div>
+    <div class="stat"><div class="stat-val">AI</div><div class="stat-label">Powered</div></div>
+    <div class="stat"><div class="stat-val">⚡</div><div class="stat-label">Real-Time Processing</div></div>
+  </div>
+
+  <!-- Main Translation Card -->
+  <div class="main-card">
+    <form id="translatorForm" method="POST" enctype="multipart/form-data" action="/">
+      <input type="hidden" name="input_type" id="input_type" value="youtube">
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button type="button" class="tab active" id="tab-yt" onclick="switchTab('youtube')">
+          <i class="fab fa-youtube" style="color:#ff4444;"></i> YouTube URL
+        </button>
+        <button type="button" class="tab" id="tab-upload" onclick="switchTab('upload')">
+          <i class="fas fa-cloud-upload-alt"></i> Upload Video
+        </button>
+      </div>
+
+      <!-- YouTube Input -->
+      <div id="section-youtube" class="input-section active">
+        <div class="input-group">
+          <label class="input-label"><i class="fab fa-youtube" style="color:#ff4444;"></i> YouTube Video URL</label>
+          <input class="input-field" type="text" name="youtube_url" id="youtube_url"
+            placeholder="https://www.youtube.com/watch?v=..." required>
+        </div>
+      </div>
+
+      <!-- Upload Input -->
+      <div id="section-upload" class="input-section">
+        <div class="input-group">
+          <label class="input-label"><i class="fas fa-film"></i> Upload Video File</label>
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('videoFileInput').click()">
+            <i class="fas fa-cloud-upload-alt drop-icon"></i>
+            <strong>Click to upload</strong>
+            <p>or drag &amp; drop your video here</p>
+            <p class="drop-hint">MP4, AVI, MOV, MKV supported</p>
+            <input type="file" id="videoFileInput" name="video_file" accept="video/*" onchange="fileChosen(this)">
+          </div>
+          <div class="file-chosen" id="fileChosen">
+            <i class="fas fa-check-circle" style="color:#22c55e;"></i> <span id="fileName"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Language Pills -->
+      <div class="lang-section">
+        <label class="input-label"><i class="fas fa-globe"></i> Select Target Languages</label>
+        <div class="lang-pills">
+          <label class="lang-pill"><input type="checkbox" name="languages" value="kn"><span>🇮🇳 Kannada</span></label>
+          <label class="lang-pill"><input type="checkbox" name="languages" value="hi"><span>🇮🇳 Hindi</span></label>
+          <label class="lang-pill"><input type="checkbox" name="languages" value="ta"><span>🇮🇳 Tamil</span></label>
+          <label class="lang-pill"><input type="checkbox" name="languages" value="te"><span>🇮🇳 Telugu</span></label>
+          <label class="lang-pill"><input type="checkbox" name="languages" value="ml"><span>🇮🇳 Malayalam</span></label>
+        </div>
+      </div>
+
+      <!-- Voice Selection -->
+      <div class="lang-section" style="margin-top:1.2rem;">
+        <label class="input-label"><i class="fas fa-microphone"></i> TTS Voice Style</label>
+        <div class="lang-pills">
+          <label class="lang-pill">
+            <input type="radio" name="voice" value="male" checked>
+            <span><i class="fas fa-mars"></i> Male</span>
+          </label>
+          <label class="lang-pill">
+            <input type="radio" name="voice" value="female">
+            <span><i class="fas fa-venus"></i> Female</span>
+          </label>
+          <label class="lang-pill">
+            <input type="radio" name="voice" value="narrator">
+            <span><i class="fas fa-broadcast-tower"></i> Narrator</span>
+          </label>
+          <label class="lang-pill">
+            <input type="radio" name="voice" value="friendly">
+            <span><i class="fas fa-smile"></i> Friendly</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Video Download Toggle (YouTube only) -->
+      <div id="videoToggleSection" class="lang-section" style="margin-top:1rem;">
+        <label class="input-label"><i class="fas fa-film"></i> Output Mode</label>
+        <div class="lang-pills">
+          <label class="lang-pill">
+            <input type="radio" name="download_video" value="1" checked>
+            <span><i class="fas fa-video"></i> Full Video Dub (slower)</span>
+          </label>
+          <label class="lang-pill">
+            <input type="radio" name="download_video" value="0">
+            <span><i class="fas fa-music"></i> Audio Only (faster)</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-translate" id="submitBtn">
+        <i class="fas fa-magic btn-icon"></i> Translate Now
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- AI Pipeline Section -->
+<div class="section">
+  <h2 class="section-title">How It <span class="gradient-text">Works</span></h2>
+  <p class="section-sub">Five intelligent AI steps transform your video into any language</p>
+  <div class="pipeline">
+    <div class="pipe-step"><div class="pipe-icon">🎥</div><p>Video Input</p></div>
+    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+    <div class="pipe-step"><div class="pipe-icon">🎤</div><p>Audio Extraction</p></div>
+    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+    <div class="pipe-step"><div class="pipe-icon">📝</div><p>Speech Recognition</p></div>
+    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+    <div class="pipe-step"><div class="pipe-icon">🌍</div><p>Translation Engine</p></div>
+    <div class="pipe-arrow"><i class="fas fa-chevron-right"></i></div>
+    <div class="pipe-step"><div class="pipe-icon">📄</div><p>Multilingual Output</p></div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="section" style="padding-top:0;">
+  <h2 class="section-title">Powerful <span class="gradient-text">Features</span></h2>
+  <p class="section-sub">Everything you need for professional multilingual video content</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-microphone-alt"></i></div>
+      <h3>AI Speech Recognition</h3>
+      <p>Powered by OpenAI Whisper for industry-leading transcription accuracy across languages.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-language"></i></div>
+      <h3>Neural Translation</h3>
+      <p>Deep learning powered translations that preserve context, tone, and meaning naturally.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fab fa-youtube"></i></div>
+      <h3>YouTube Integration</h3>
+      <p>Simply paste any YouTube URL and our system handles the rest automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+      <h3>Fast Processing</h3>
+      <p>Optimized AI pipeline delivers results in minutes, not hours.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+      <h3>Secure Uploads</h3>
+      <p>Your videos are processed securely and never stored longer than necessary.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="fas fa-download"></i></div>
+      <h3>Download Results</h3>
+      <p>Download fully translated video files ready for immediate use and sharing.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Processing Overlay -->
+<div class="processing-overlay" id="processingOverlay">
+  <div class="proc-icon">🧠</div>
+  <div class="proc-title">AI is Processing Your Video</div>
+  <div class="proc-stage" id="procStage">Initializing...</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="proc-steps">
+    <div class="proc-step" id="step1"><i class="fas fa-film"></i><span>Video Input</span></div>
+    <div class="proc-step" id="step2"><i class="fas fa-wave-square"></i><span>Audio Extract</span></div>
+    <div class="proc-step" id="step3"><i class="fas fa-comment-dots"></i><span>Transcribing</span></div>
+    <div class="proc-step" id="step4"><i class="fas fa-globe"></i><span>Translating</span></div>
+    <div class="proc-step" id="step5"><i class="fas fa-check-circle"></i><span>Output</span></div>
+  </div>
+</div>
+
+<footer>
+  <p>🌐 LinguaVision AI &nbsp;|&nbsp; Powered by Whisper · Google Translate · gTTS · FFmpeg &nbsp;|&nbsp; Hackathon 2025</p>
+</footer>
+
+<script>
+function switchTab(type) {
+  document.getElementById('input_type').value = type;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.input-section').forEach(s => s.classList.remove('active'));
+  if (type === 'youtube') {
+    document.getElementById('tab-yt').classList.add('active');
+    document.getElementById('section-youtube').classList.add('active');
+    document.getElementById('youtube_url').required = true;
+    document.getElementById('videoFileInput').required = false;
+  } else {
+    document.getElementById('tab-upload').classList.add('active');
+    document.getElementById('section-upload').classList.add('active');
+    document.getElementById('youtube_url').required = false;
+    document.getElementById('videoFileInput').required = false;
+  }
+}
+
+function fileChosen(input) {
+  if (input.files && input.files[0]) {
+    document.getElementById('fileName').textContent = input.files[0].name;
+    document.getElementById('fileChosen').style.display = 'flex';
+  }
+}
+
+// Drag & Drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files[0]) {
+    const dt = new DataTransfer();
+    dt.items.add(files[0]);
+    document.getElementById('videoFileInput').files = dt.files;
+    fileChosen(document.getElementById('videoFileInput'));
+  }
+});
+
+// Processing animation on submit
+const stages = [
+  '🎥 Loading video...',
+  '🎤 Extracting audio...',
+  '📝 Recognizing speech with Whisper AI...',
+  '🌍 Translating content...',
+  '✅ Generating output files...'
+];
+const pcts = [10, 30, 55, 80, 100];
+
+document.getElementById('translatorForm').addEventListener('submit', function(e) {
+  const pills = document.querySelectorAll('.lang-pill input:checked');
+  if (pills.length === 0) {
+    e.preventDefault();
+    alert('Please select at least one target language.');
+    return;
+  }
+  const overlay = document.getElementById('processingOverlay');
+  overlay.classList.add('active');
+  let i = 0;
+  function nextStage() {
+    if (i < stages.length) {
+      document.getElementById('procStage').textContent = stages[i];
+      document.getElementById('progressFill').style.width = pcts[i] + '%';
+      const step = document.getElementById('step' + (i + 1));
+      if (step) step.classList.add('done');
+      i++;
+      if (i < stages.length) setTimeout(nextStage, 3000);
+    }
+  }
+  nextStage();
+});
+
+// Default: youtube url is required
+document.getElementById('youtube_url').required = true;
+</script>
+</body>
+</html>
